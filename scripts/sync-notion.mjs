@@ -1,7 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NotionToMarkdown } from "notion-to-md";
 import { createNotionClient, queryPagesByStatus } from "./notion-client.mjs";
+import { downloadImages } from "./notion-images.mjs";
 import {
   frontmatterFor,
   normalizeMarkdown,
@@ -10,48 +10,6 @@ import {
 
 const POSTS_DIR = "src/content/posts/_notion";
 const IMAGES_DIR = "public/images/notion";
-
-const MIME_EXTENSIONS = new Map([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-  ["image/gif", "gif"],
-  ["image/webp", "webp"],
-  ["image/svg+xml", "svg"],
-]);
-
-async function replaceAsync(source, pattern, replacer) {
-  const matches = [...source.matchAll(pattern)];
-  const replacements = await Promise.all(matches.map(match => replacer(match)));
-  let index = 0;
-  return source.replace(pattern, () => replacements[index++]);
-}
-
-async function downloadImages(markdown, slug) {
-  let imageIndex = 0;
-  const imageDir = path.join(IMAGES_DIR, slug);
-
-  return replaceAsync(
-    markdown,
-    /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)(?:\s+"[^"]*")?\)/g,
-    async match => {
-      const [, alt, url] = match;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to download image: ${response.status} ${url}`);
-      }
-
-      const contentType = response.headers.get("content-type")?.split(";")[0];
-      const extension = MIME_EXTENSIONS.get(contentType) || "bin";
-      const filename = `${String(++imageIndex).padStart(2, "0")}.${extension}`;
-      await mkdir(imageDir, { recursive: true });
-      await writeFile(
-        path.join(imageDir, filename),
-        Buffer.from(await response.arrayBuffer())
-      );
-      return `![${alt}](/images/notion/${slug}/${filename})`;
-    }
-  );
-}
 
 async function main() {
   const notion = createNotionClient();
