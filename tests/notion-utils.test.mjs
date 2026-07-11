@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { NotionToMarkdown } from "notion-to-md";
 import {
   frontmatterFor,
   makeSlug,
@@ -24,6 +25,28 @@ test("normalizeMarkdown removes Notion-only placeholder blocks", () => {
     "<empty-block/>",
   ].join("\n");
   assert.equal(normalizeMarkdown(markdown), "## 标题");
+});
+
+test("notion-to-md keeps quote children as quoted Markdown lists", () => {
+  const converter = new NotionToMarkdown({ notionClient: {} });
+  const output = converter.toMarkdownString([
+    {
+      blockId: "quote",
+      type: "quote",
+      parent: ">",
+      children: [
+        {
+          blockId: "bullet",
+          type: "bulleted_list_item",
+          parent: "- **版本控制**：精通 Git",
+          children: [],
+        },
+      ],
+    },
+  ]).parent;
+
+  assert.match(output, /> - \*\*版本控制\*\*：精通 Git/);
+  assert.doesNotMatch(output, /^ {4}-/m);
 });
 
 test("frontmatterFor maps the posts database properties", () => {

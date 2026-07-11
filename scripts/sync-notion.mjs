@@ -1,5 +1,6 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { NotionToMarkdown } from "notion-to-md";
 import { createNotionClient, queryPagesByStatus } from "./notion-client.mjs";
 import {
   frontmatterFor,
@@ -7,7 +8,7 @@ import {
   renderPostFrontmatter,
 } from "./notion-utils.mjs";
 
-const POSTS_DIR = "src/content/posts/notion";
+const POSTS_DIR = "src/content/posts/_notion";
 const IMAGES_DIR = "public/images/notion";
 
 const MIME_EXTENSIONS = new Map([
@@ -55,29 +56,32 @@ async function downloadImages(markdown, slug) {
 async function main() {
   const notion = createNotionClient();
   if (!notion) {
-    process.stdout.write("NOTION_API_SECRET is not set; skipping Notion sync.\n");
+    process.stdout.write(
+      "NOTION_API_SECRET is not set; skipping Notion sync.\n"
+    );
     return;
   }
 
   const pages = await queryPagesByStatus(notion, ["待发布", "已发布"]);
+  const notionToMarkdown = new NotionToMarkdown({
+    notionClient: notion,
+    config: { parseChildPages: false },
+  });
   await rm(POSTS_DIR, { recursive: true, force: true });
   await rm(IMAGES_DIR, { recursive: true, force: true });
 
   for (const page of pages) {
     const post = frontmatterFor(page);
-    const response = await notion.pages.retrieveMarkdown({ page_id: page.id });
-    if (response.truncated || response.unknown_block_ids.length > 0) {
-      throw new Error(`Notion returned incomplete Markdown for ${post.title}`);
-    }
+    const blocks = await notionToMarkdown.pageToMarkdown(page.id);
+    const converted = notionToMarkdown.toMarkdownString(blocks).parent ?? "";
 
     const markdown = await downloadImages(
-      normalizeMarkdown(response.markdown),
+      normalizeMarkdown(converted),
       post.slug
     );
-    const outputDir = path.join(POSTS_DIR, post.slug);
-    await mkdir(outputDir, { recursive: true });
+    await mkdir(POSTS_DIR, { recursive: true });
     await writeFile(
-      path.join(outputDir, "index.md"),
+      path.join(POSTS_DIR, `${post.slug}.md`),
       `${renderPostFrontmatter(post)}\n\n${markdown}\n`
     );
     process.stdout.write(`Synced: ${post.title}\n`);
