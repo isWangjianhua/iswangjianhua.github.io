@@ -1,0 +1,68 @@
+name: Publish blog
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Sync publishable Notion posts
+        run: npm run sync:notion
+        env:
+          NOTION_API_SECRET: ${{ secrets.NOTION_API_SECRET }}
+          NOTION_DATA_SOURCE_ID: 2fc313b1-9d45-81d1-94aa-000b0163459a
+      - run: npm test
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  mark-published:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ needs.deploy.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Mark deployed posts as published
+        run: npm run mark-published
+        env:
+          NOTION_API_SECRET: ${{ secrets.NOTION_API_SECRET }}
+          NOTION_DATA_SOURCE_ID: 2fc313b1-9d45-81d1-94aa-000b0163459a
