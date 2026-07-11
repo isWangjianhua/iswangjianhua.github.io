@@ -27,6 +27,22 @@ test("normalizeMarkdown removes Notion-only placeholder blocks", () => {
   assert.equal(normalizeMarkdown(markdown), "## 标题");
 });
 
+test("normalizeMarkdown removes an ignored table of contents and its dividers", () => {
+  const markdown = [
+    "---",
+    "",
+    '<table_of_contents color="gray"/>',
+    "",
+    "---",
+    "",
+    "# 正文",
+    "",
+    "---",
+  ].join("\n");
+
+  assert.equal(normalizeMarkdown(markdown), "# 正文\n\n---");
+});
+
 test("normalizeMarkdown removes empty quotes", () => {
   assert.equal(normalizeMarkdown(">\n\n# 标题"), "# 标题");
 });

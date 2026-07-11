@@ -67,6 +67,10 @@ async function main() {
     notionClient: notion,
     config: { parseChildPages: false },
   });
+  notionToMarkdown.setCustomTransformer(
+    "table_of_contents",
+    async () => '<table_of_contents color="gray"/>'
+  );
   await rm(POSTS_DIR, { recursive: true, force: true });
   await rm(IMAGES_DIR, { recursive: true, force: true });
 

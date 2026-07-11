@@ -44,6 +44,10 @@ export function makeSlug(title, configuredSlug, pageId) {
 
 export function normalizeMarkdown(markdown) {
   const cleaned = markdown
+    .replace(
+      /^---[ \t]*\n(?:[ \t]*\n)*<table_of_contents[^>]*\/>[ \t]*\n(?:[ \t]*\n)*---[ \t]*$/gm,
+      ""
+    )
     .replace(/^<table_of_contents[^>]*\/>\s*$/gm, "")
     .replace(/^<empty-block\/>\s*$/gm, "")
     .replace(/^(#{1,6}\s+.+?)\s+\{color="[^"]+"\}\s*$/gm, "$1");
