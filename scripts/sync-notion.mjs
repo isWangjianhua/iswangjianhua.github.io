@@ -1,4 +1,5 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { NotionToMarkdown } from "notion-to-md";
 import { createNotionClient, queryPagesByStatus } from "./notion-client.mjs";
 import { downloadImages } from "./notion-images.mjs";
