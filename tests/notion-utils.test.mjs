@@ -16,7 +16,7 @@ test("makeSlug uses configured slugs and stable page ID fallbacks", () => {
   assert.equal(makeSlug("纯中文标题", "", "12345678-abcd"), "12345678abcd");
 });
 
-test("normalizeMarkdown removes Notion-only placeholder blocks", () => {
+test("normalizeMarkdown converts Notion TOCs and removes empty blocks", () => {
   const markdown = [
     '<table_of_contents color="gray"/>',
     "",
@@ -24,10 +24,13 @@ test("normalizeMarkdown removes Notion-only placeholder blocks", () => {
     "",
     "<empty-block/>",
   ].join("\n");
-  assert.equal(normalizeMarkdown(markdown), "## 标题");
+  assert.equal(
+    normalizeMarkdown(markdown),
+    "## Table of contents\n\n## 标题"
+  );
 });
 
-test("normalizeMarkdown removes an ignored table of contents and its dividers", () => {
+test("normalizeMarkdown converts a Notion TOC without its dividers", () => {
   const markdown = [
     "---",
     "",
@@ -40,7 +43,10 @@ test("normalizeMarkdown removes an ignored table of contents and its dividers", 
     "---",
   ].join("\n");
 
-  assert.equal(normalizeMarkdown(markdown), "# 正文\n\n---");
+  assert.equal(
+    normalizeMarkdown(markdown),
+    "## Table of contents\n\n# 正文\n\n---"
+  );
 });
 
 test("normalizeMarkdown removes empty quotes", () => {

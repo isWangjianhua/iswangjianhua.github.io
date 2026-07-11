@@ -46,9 +46,12 @@ export function normalizeMarkdown(markdown) {
   const cleaned = markdown
     .replace(
       /^---[ \t]*\n(?:[ \t]*\n)*<table_of_contents[^>]*\/>[ \t]*\n(?:[ \t]*\n)*---[ \t]*$/gm,
-      ""
+      "## Table of contents"
     )
-    .replace(/^<table_of_contents[^>]*\/>\s*$/gm, "")
+    .replace(
+      /^<table_of_contents[^>]*\/>[ \t]*$/gm,
+      "## Table of contents"
+    )
     .replace(/^<empty-block\/>\s*$/gm, "")
     .replace(/^(#{1,6}\s+.+?)\s+\{color="[^"]+"\}\s*$/gm, "$1");
   const lines = cleaned.split("\n");
