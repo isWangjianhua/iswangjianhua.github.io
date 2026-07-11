@@ -27,6 +27,53 @@ test("normalizeMarkdown removes Notion-only placeholder blocks", () => {
   assert.equal(normalizeMarkdown(markdown), "## 标题");
 });
 
+test("normalizeMarkdown removes empty quotes", () => {
+  assert.equal(normalizeMarkdown(">\n\n# 标题"), "# 标题");
+});
+
+test("normalizeMarkdown moves a leading link-only quote to references", () => {
+  const markdown = [
+    "> [Learn Claude Code](https://learn.shareai.run/zh/)<br>[CoreCoder](https://github.com/he-yufeng/CoreCoder)",
+    "",
+    "---",
+    "",
+    "# AgentLoop",
+  ].join("\n");
+
+  assert.equal(
+    normalizeMarkdown(markdown),
+    [
+      "---",
+      "",
+      "# AgentLoop",
+      "",
+      "## 参考资料",
+      "",
+      "- [Learn Claude Code](https://learn.shareai.run/zh/)",
+      "- [CoreCoder](https://github.com/he-yufeng/CoreCoder)",
+    ].join("\n")
+  );
+
+  const multilineQuote = [
+    "> [Learn Claude Code](https://learn.shareai.run/zh/)",
+    "> [CoreCoder](https://github.com/he-yufeng/CoreCoder)",
+    "",
+    "# AgentLoop",
+  ].join("\n");
+  assert.match(normalizeMarkdown(multilineQuote), /## 参考资料/);
+});
+
+test("normalizeMarkdown preserves regular AstroPaper quotes", () => {
+  const markdown = [
+    "> 关键结论",
+    "> - [相关资料](https://example.com)",
+    "",
+    "# 正文",
+  ].join("\n");
+
+  assert.equal(normalizeMarkdown(markdown), markdown);
+});
+
 test("notion-to-md keeps quote children as quoted Markdown lists", () => {
   const converter = new NotionToMarkdown({ notionClient: {} });
   const output = converter.toMarkdownString([

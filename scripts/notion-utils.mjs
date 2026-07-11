@@ -43,12 +43,59 @@ export function makeSlug(title, configuredSlug, pageId) {
 }
 
 export function normalizeMarkdown(markdown) {
-  return markdown
+  const cleaned = markdown
     .replace(/^<table_of_contents[^>]*\/>\s*$/gm, "")
     .replace(/^<empty-block\/>\s*$/gm, "")
-    .replace(/^(#{1,6}\s+.+?)\s+\{color="[^"]+"\}\s*$/gm, "$1")
+    .replace(/^(#{1,6}\s+.+?)\s+\{color="[^"]+"\}\s*$/gm, "$1");
+  const lines = cleaned.split("\n");
+  const output = [];
+  const references = [];
+  let beforeFirstHeading = true;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^#{1,6}\s/.test(line)) beforeFirstHeading = false;
+
+    if (!/^>/.test(line)) {
+      output.push(line);
+      continue;
+    }
+
+    const quoteLines = [];
+    while (index < lines.length && /^>/.test(lines[index])) {
+      quoteLines.push(lines[index]);
+      index += 1;
+    }
+    index -= 1;
+
+    const quoteParts = quoteLines
+      .map(quoteLine => quoteLine.replace(/^>\s?/, ""))
+      .join("\n")
+      .split(/<br\s*\/?>|\n/i)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (quoteParts.length === 0) continue;
+
+    const links = quoteParts.map(part =>
+      part.match(/^(?:[-*+]\s+)?(\[[^\]]+\]\(.+\))$/)?.[1]
+    );
+    if (beforeFirstHeading && links.every(Boolean)) {
+      references.push(...links);
+      continue;
+    }
+
+    output.push(...quoteLines);
+  }
+
+  const body = output
+    .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+  if (references.length === 0) return body;
+  const referenceList = references.map(link => `- ${link}`).join("\n");
+  return `${body}\n\n## 参考资料\n\n${referenceList}`;
 }
 
 export function frontmatterFor(page) {
