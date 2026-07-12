@@ -6,6 +6,7 @@ import { downloadImages } from "./notion-images.mjs";
 import {
   frontmatterFor,
   normalizeMarkdown,
+  renderNotionCodeBlock,
   renderPostFrontmatter,
 } from "./notion-utils.mjs";
 
@@ -29,6 +30,9 @@ async function main() {
   notionToMarkdown.setCustomTransformer(
     "table_of_contents",
     async () => '<table_of_contents color="gray"/>'
+  );
+  notionToMarkdown.setCustomTransformer("code", async block =>
+    renderNotionCodeBlock(block)
   );
   await rm(POSTS_DIR, { recursive: true, force: true });
   await rm(IMAGES_DIR, { recursive: true, force: true });

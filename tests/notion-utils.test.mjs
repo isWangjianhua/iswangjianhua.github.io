@@ -5,6 +5,7 @@ import {
   frontmatterFor,
   makeSlug,
   normalizeMarkdown,
+  renderNotionCodeBlock,
   renderPostFrontmatter,
 } from "../scripts/notion-utils.mjs";
 
@@ -94,6 +95,39 @@ test("normalizeMarkdown preserves regular AstroPaper quotes", () => {
   ].join("\n");
 
   assert.equal(normalizeMarkdown(markdown), markdown);
+});
+
+test("renderNotionCodeBlock uses a longer fence for nested code fences", () => {
+  const output = renderNotionCodeBlock({
+    type: "code",
+    code: {
+      language: "markdown",
+      rich_text: [
+        {
+          plain_text: [
+            "# AGENTS.md",
+            "",
+            "```text",
+            "app/",
+            "```",
+          ].join("\n"),
+        },
+      ],
+    },
+  });
+
+  assert.equal(
+    output,
+    [
+      "````markdown",
+      "# AGENTS.md",
+      "",
+      "```text",
+      "app/",
+      "```",
+      "````",
+    ].join("\n")
+  );
 });
 
 test("notion-to-md keeps quote children as quoted Markdown lists", () => {

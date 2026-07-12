@@ -42,6 +42,21 @@ export function makeSlug(title, configuredSlug, pageId) {
   return normalized || pageId.replaceAll("-", "").slice(0, 12);
 }
 
+export function renderNotionCodeBlock(block) {
+  const code = block?.code;
+  const content = Array.isArray(code?.rich_text)
+    ? code.rich_text.map(item => item.plain_text ?? "").join("")
+    : "";
+  const longestBacktickRun = Math.max(
+    0,
+    ...(content.match(/`+/g) ?? []).map(run => run.length)
+  );
+  const fence = "`".repeat(Math.max(3, longestBacktickRun + 1));
+  const language = code?.language ?? "";
+
+  return `${fence}${language}\n${content}\n${fence}`;
+}
+
 export function normalizeMarkdown(markdown) {
   const cleaned = markdown
     .replace(
